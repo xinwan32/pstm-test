@@ -7,18 +7,24 @@
 
 <body style="font-family:Arial;text-align:center;margin-top:40px;">
 
-<h2>Listen and Repeat</h2>
+<h2>Listen and Repeat Task</h2>
 
 <label>
 Select your name:
-<select id="student">
-<option value="">-- Choose --</option>
-<option>Alice</option>
-<option>Bob</option>
+<select id="student" required>
+  <option value="">-- Choose --</option>
+  <option>Alice</option>
 </select>
 </label>
 
-<h3 id="itemLabel">Item 1 of 12</h3>
+<p id="instruction">
+You will first try an example.<br><br>
+Click <strong>START</strong>.<br>
+Listen carefully. The audio will play <strong>once only</strong>.<br>
+After listening, repeat aloud and record your voice.
+</p>
+
+<h3 id="itemLabel">Example</h3>
 
 <button id="startBtn">START</button>
 <br><br>
@@ -34,18 +40,32 @@ Select your name:
 
 <script>
 
-const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzlwo6YR-WV2NtopdtVV4JTntVhuXsOiaSRRPiiUG4xMaqsA6191PLEBHcPyuhrX2c/exec";
+/* ============================
+   FILE SETTINGS
+============================ */
+
+const exampleFile = "example.mp3";
 
 const audioFiles = [
-"item01.mp3","item02.mp3","item03.mp3","item04.mp3",
-"item05.mp3","item06.mp3","item07.mp3","item08.mp3",
-"item09.mp3","item10.mp3","item11.mp3","item12.mp3"
+  "item01.mp3","item02.mp3","item03.mp3","item04.mp3",
+  "item05.mp3","item06.mp3","item07.mp3","item08.mp3",
+  "item09.mp3","item10.mp3","item11.mp3","item12.mp3"
 ];
+
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw-6n6ptYAruX8CSk44r2pIf3NvSIMxVsn3WhxR7i7SLn6Cd4sAJVAXF0p3MuaGmGk/exec";
+
+/* ============================
+   VARIABLES
+============================ */
 
 let current = 0;
 let recorder;
 let chunks = [];
-let stream;
+let isExample = true;
+
+/* ============================
+   ELEMENTS
+============================ */
 
 const audio = document.getElementById("audio");
 const startBtn = document.getElementById("startBtn");
@@ -54,84 +74,148 @@ const stopBtn = document.getElementById("stopBtn");
 const nextBtn = document.getElementById("nextBtn");
 const status = document.getElementById("status");
 const itemLabel = document.getElementById("itemLabel");
+const instruction = document.getElementById("instruction");
+
+/* ============================
+   INITIAL LOAD
+============================ */
 
 audio.controls = false;
-audio.src = audioFiles[current];
+audio.src = exampleFile;
 
-navigator.mediaDevices.getUserMedia({ audio: true })
-.then(s => stream = s)
-.catch(() => alert("Microphone permission required"));
+/* ============================
+   START BUTTON
+============================ */
 
 startBtn.onclick = async () => {
-
-  const student = document.getElementById("student").value;
-
-  if (!student) {
-    alert("Select your name first.");
-    return;
-  }
 
   startBtn.disabled = true;
   status.innerText = "Listening...";
   await audio.play();
+
 };
 
-audio.onended = () => {
+/* ============================
+   AFTER AUDIO ENDS
+============================ */
 
-  status.innerText = "Record your answer";
+audio.onended = async () => {
+
+  status.innerText = "Repeat aloud and record.";
   recordBtn.disabled = false;
 
+  const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
   recorder = new MediaRecorder(stream);
 
   recorder.ondataavailable = e => chunks.push(e.data);
 
-  recorder.onstop = () => uploadRecording();
+  recorder.onstop = () => {
+
+    if (isExample) {
+      status.innerText = "Example completed. Click NEXT to begin the test.";
+      nextBtn.disabled = false;
+    } else {
+      status.innerText = "Uploading recording...";
+      uploadRecording();
+    }
+
+  };
+
 };
+
+/* ============================
+   RECORD BUTTON
+============================ */
 
 recordBtn.onclick = () => {
 
   chunks = [];
   recorder.start();
+
   recordBtn.disabled = true;
   stopBtn.disabled = false;
   status.innerText = "Recording...";
+
 };
 
+/* ============================
+   STOP BUTTON
+============================ */
+
 stopBtn.onclick = () => {
+
   recorder.stop();
   stopBtn.disabled = true;
+
 };
+
+/* ============================
+   NEXT BUTTON
+============================ */
 
 nextBtn.onclick = () => {
 
-  current++;
+  if (isExample) {
 
-  if (current < audioFiles.length) {
+    isExample = false;
+    current = 0;
 
     audio.src = audioFiles[current];
-    itemLabel.innerText = `Item ${current + 1} of 12`;
+    itemLabel.innerText = `Item 1 of 12`;
 
-    startBtn.disabled = false;
-    recordBtn.disabled = true;
-    nextBtn.disabled = true;
-    status.innerText = "";
+    instruction.innerHTML =
+      'Click <strong>START</strong>.<br>' +
+      'You will hear each item <strong>once only</strong>.<br>' +
+      'Repeat aloud and record your voice after listening.<br>' +
+      'There are 12 items in total.';
 
   } else {
 
-    itemLabel.innerText = "Test Completed";
-    status.innerText = "Thank you.";
+    current++;
+
+    if (current < audioFiles.length) {
+
+      audio.src = audioFiles[current];
+      itemLabel.innerText = `Item ${current + 1} of 12`;
+
+    } else {
+
+      itemLabel.innerText = "Test completed";
+      status.innerText = "Thank you. You may close this page.";
+
+      startBtn.disabled = true;
+      recordBtn.disabled = true;
+      stopBtn.disabled = true;
+      nextBtn.disabled = true;
+
+      return;
+    }
   }
+
+  startBtn.disabled = false;
+  recordBtn.disabled = true;
+  stopBtn.disabled = true;
+  nextBtn.disabled = true;
+  status.innerText = "";
+
 };
+
+/* ============================
+   UPLOAD RECORDING
+============================ */
 
 function uploadRecording() {
 
   const studentName = document.getElementById("student").value;
 
+  if (!studentName) {
+    alert("Please select your name.");
+    return;
+  }
+
   const blob = new Blob(chunks, { type: "audio/webm" });
-  chunks = [];
 
   const reader = new FileReader();
-
   reader.onloadend = () => {
 
     const base64 = reader.result.split(",")[1];
@@ -144,19 +228,24 @@ function uploadRecording() {
         audio: base64
       })
     })
-    .then(r => r.text())
     .then(() => {
-      status.innerText = "Uploaded";
+      status.innerText = "Recording uploaded.";
       nextBtn.disabled = false;
+    })
+    .catch(() => {
+      status.innerText = "Upload failed.";
     });
+
   };
 
   reader.readAsDataURL(blob);
 }
 
 </script>
+
 </body>
 </html>
+
 
 
 
