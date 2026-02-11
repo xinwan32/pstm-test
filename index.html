@@ -11,16 +11,12 @@
 
 <label>
 Select your name:
-<select id="student" required>
-  <option value="">-- Choose --</option>
-  <option>Alice</option>
+<select id="student">
+<option value="">-- Choose --</option>
+<option>Alice</option>
+<option>Bob</option>
 </select>
 </label>
-
-<p id="instruction">
-Click <strong>START</strong>.  
-You will hear the audio <strong>once only</strong>.
-</p>
 
 <h3 id="itemLabel">Item 1 of 12</h3>
 
@@ -37,17 +33,19 @@ You will hear the audio <strong>once only</strong>.
 <p id="status"></p>
 
 <script>
-const audioFiles = [
-  "item01.mp3","item02.mp3","item03.mp3","item04.mp3",
-  "item05.mp3","item06.mp3","item07.mp3","item08.mp3",
-  "item09.mp3","item10.mp3","item11.mp3","item12.mp3"
-];
 
-const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbySODV_R1jRcbd67Y2UecIzBTb0tR0tbU5R6u4XTDgDw82YAcS1lc-Yh0jFq1jaOpQ/exec";
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzlwo6YR-WV2NtopdtVV4JTntVhuXsOiaSRRPiiUG4xMaqsA6191PLEBHcPyuhrX2c/exec";
+
+const audioFiles = [
+"item01.mp3","item02.mp3","item03.mp3","item04.mp3",
+"item05.mp3","item06.mp3","item07.mp3","item08.mp3",
+"item09.mp3","item10.mp3","item11.mp3","item12.mp3"
+];
 
 let current = 0;
 let recorder;
 let chunks = [];
+let stream;
 
 const audio = document.getElementById("audio");
 const startBtn = document.getElementById("startBtn");
@@ -60,28 +58,38 @@ const itemLabel = document.getElementById("itemLabel");
 audio.controls = false;
 audio.src = audioFiles[current];
 
+navigator.mediaDevices.getUserMedia({ audio: true })
+.then(s => stream = s)
+.catch(() => alert("Microphone permission required"));
+
 startBtn.onclick = async () => {
+
+  const student = document.getElementById("student").value;
+
+  if (!student) {
+    alert("Select your name first.");
+    return;
+  }
+
   startBtn.disabled = true;
   status.innerText = "Listening...";
   await audio.play();
 };
 
-audio.onended = async () => {
-  status.innerText = "Repeat aloud and record.";
+audio.onended = () => {
+
+  status.innerText = "Record your answer";
   recordBtn.disabled = false;
 
-  const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
   recorder = new MediaRecorder(stream);
 
   recorder.ondataavailable = e => chunks.push(e.data);
 
-  recorder.onstop = () => {
-    status.innerText = "Uploading recording...";
-    uploadRecording();
-  };
+  recorder.onstop = () => uploadRecording();
 };
 
 recordBtn.onclick = () => {
+
   chunks = [];
   recorder.start();
   recordBtn.disabled = true;
@@ -95,19 +103,23 @@ stopBtn.onclick = () => {
 };
 
 nextBtn.onclick = () => {
+
   current++;
 
   if (current < audioFiles.length) {
+
     audio.src = audioFiles[current];
     itemLabel.innerText = `Item ${current + 1} of 12`;
+
     startBtn.disabled = false;
     recordBtn.disabled = true;
-    stopBtn.disabled = true;
     nextBtn.disabled = true;
     status.innerText = "";
+
   } else {
-    itemLabel.innerText = "Test completed";
-    status.innerText = "Thank you. You may close this page.";
+
+    itemLabel.innerText = "Test Completed";
+    status.innerText = "Thank you.";
   }
 };
 
@@ -115,14 +127,11 @@ function uploadRecording() {
 
   const studentName = document.getElementById("student").value;
 
-  if (!studentName) {
-    alert("Please select your name.");
-    return;
-  }
-
   const blob = new Blob(chunks, { type: "audio/webm" });
+  chunks = [];
 
   const reader = new FileReader();
+
   reader.onloadend = () => {
 
     const base64 = reader.result.split(",")[1];
@@ -135,21 +144,17 @@ function uploadRecording() {
         audio: base64
       })
     })
+    .then(r => r.text())
     .then(() => {
-      status.innerText = "Recording uploaded.";
+      status.innerText = "Uploaded";
       nextBtn.disabled = false;
-    })
-    .catch(() => {
-      status.innerText = "Upload failed.";
     });
-
   };
 
   reader.readAsDataURL(blob);
 }
+
 </script>
-
-
 </body>
 </html>
 
