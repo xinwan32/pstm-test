@@ -9,11 +9,24 @@
 
 <h2>Listen and Repeat Task</h2>
 
+<!-- CLASS DROPDOWN -->
+<label>
+Select your class:
+<select id="class" onchange="updateNames()">
+  <option value="">-- Choose Class --</option>
+  <option value="J1.10">J1.10</option>
+  <option value="J1.15">J1.15</option>
+</select>
+</label>
+
+<br><br>
+
+
+<!-- NAME DROPDOWN -->
 <label>
 Select your name:
-<select id="student" required>
-  <option value="">-- Choose --</option>
-  <option>Alice</option>
+<select id="student">
+  <option value="">-- Choose Name --</option>
 </select>
 </label>
 
@@ -41,15 +54,42 @@ After listening, repeat aloud and record your voice.
 <script>
 
 /* ============================
+   CLASS LIST
+============================ */
+
+const classList = {
+  "J1.10": ["Alice", "Ben", "Chloe"],
+  "J1.15": ["David", "Emma", "Frank"]
+};
+
+function updateNames() {
+
+  const selectedClass = document.getElementById("class").value;
+  const studentDropdown = document.getElementById("student");
+
+  studentDropdown.innerHTML = '<option value="">-- Choose Name --</option>';
+
+  if (!selectedClass) return;
+
+  classList[selectedClass].forEach(name => {
+    const option = document.createElement("option");
+    option.value = name;
+    option.text = name;
+    studentDropdown.appendChild(option);
+  });
+}
+
+
+/* ============================
    FILE SETTINGS
 ============================ */
 
-const exampleFile = "example.mp3";
+const exampleFile = "example.wav";
 
 const audioFiles = [
-  "item01.mp3","item02.mp3","item03.mp3","item04.mp3",
-  "item05.mp3","item06.mp3","item07.mp3","item08.mp3",
-  "item09.mp3","item10.mp3","item11.mp3","item12.mp3"
+  "item01.wav","item02.wav","item03.wav","item04.wav",
+  "item05.wav","item06.wav","item07.wav","item08.wav",
+  "item09.wav","item10.wav","item11.wav","item12.wav"
 ];
 
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw-6n6ptYAruX8CSk44r2pIf3NvSIMxVsn3WhxR7i7SLn6Cd4sAJVAXF0p3MuaGmGk/exec";
@@ -88,6 +128,14 @@ audio.src = exampleFile;
 ============================ */
 
 startBtn.onclick = async () => {
+
+  const className = document.getElementById("class").value;
+  const studentName = document.getElementById("student").value;
+
+  if (!className || !studentName) {
+    alert("Please select your class and name.");
+    return;
+  }
 
   startBtn.disabled = true;
   status.innerText = "Listening...";
@@ -206,12 +254,10 @@ nextBtn.onclick = () => {
 
 function uploadRecording() {
 
+  const className = document.getElementById("class").value;
   const studentName = document.getElementById("student").value;
 
-  if (!studentName) {
-    alert("Please select your name.");
-    return;
-  }
+  const fullName = className + "_" + studentName;
 
   const blob = new Blob(chunks, { type: "audio/webm" });
 
@@ -223,7 +269,7 @@ function uploadRecording() {
     fetch(SCRIPT_URL, {
       method: "POST",
       body: new URLSearchParams({
-        student: studentName,
+        student: fullName,
         item: current + 1,
         audio: base64
       })
