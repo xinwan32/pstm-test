@@ -59,7 +59,7 @@ const audioFiles = [
   "item09.wav","item10.wav","item11.wav","item12.wav"
 ];
 
-const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw-6n6ptYAruX8CSk44r2pIf3NvSIMxVsn3WhxR7i7SLn6Cd4sAJVAXF0p3MuaGmGk/exec";
+const SCRIPT_URL = "PASTE_YOUR_SCRIPT_URL_HERE";
 
 /* ============================
    VARIABLES
@@ -97,6 +97,27 @@ navigator.mediaDevices.getUserMedia({ audio: true })
 .catch(() => alert("Microphone permission required"));
 
 /* ============================
+   FORMAT DETECTION
+============================ */
+
+function getSupportedMimeType() {
+
+  if (MediaRecorder.isTypeSupported("audio/mp4")) {
+    return "audio/mp4"; // Safari / iPad
+  }
+
+  if (MediaRecorder.isTypeSupported("audio/webm;codecs=opus")) {
+    return "audio/webm;codecs=opus"; // Chrome
+  }
+
+  if (MediaRecorder.isTypeSupported("audio/ogg;codecs=opus")) {
+    return "audio/ogg;codecs=opus"; // Firefox
+  }
+
+  return ""; // fallback
+}
+
+/* ============================
    START
 ============================ */
 
@@ -115,7 +136,11 @@ audio.onended = () => {
   status.innerText = "Now record your answer.";
   recordBtn.disabled = false;
 
-  recorder = new MediaRecorder(stream);
+  const mimeType = getSupportedMimeType();
+
+  recorder = mimeType
+    ? new MediaRecorder(stream, { mimeType })
+    : new MediaRecorder(stream);
 
   recorder.ondataavailable = e => chunks.push(e.data);
 
@@ -211,7 +236,8 @@ function uploadRecording() {
 
   isUploading = true;
 
-  const blob = new Blob(chunks, { type: "audio/ogg" }); // changed to ogg
+  const mimeType = recorder.mimeType || "audio/webm";
+  const blob = new Blob(chunks, { type: mimeType });
 
   const reader = new FileReader();
 
@@ -224,7 +250,8 @@ function uploadRecording() {
       body: new URLSearchParams({
         student: fullName,
         item: current + 1,
-        audio: base64
+        audio: base64,
+        mimeType: mimeType
       })
     })
     .then(() => {
