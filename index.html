@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>PSTM Setup</title>
+</head>
+
+<body style="font-family:Arial;text-align:center;margin-top:60px;">
+
+<h2>Select Your Class and Name</h2>
+
+<label>
+Class:
+<select id="class" onchange="updateNames()">
+  <option value="">-- Choose Class --</option>
+  <option value="J1.10">J1.10</option>
+  <option value="J1.15">J1.15</option>
+</select>
+</label>
+
+<br><br>
+
+<label>
+Name:
+<select id="student">
+  <option value="">-- Choose Name --</option>
+</select>
+</label>
+
+<br><br><br>
+
+<button onclick="goToTest()">Start Task</button>
+
+<script>
+
+const classList = {
+  "J1.10": ["Alice", "Ben", "Chloe"],
+  "J1.15": ["David", "Emma", "Frank"]
+};
+
+function updateNames() {
+  const selectedClass = document.getElementById("class").value;
+  const studentDropdown = document.getElementById("student");
+
+  studentDropdown.innerHTML = '<option value="">-- Choose Name --</option>';
+
+  if (!selectedClass) return;
+
+  classList[selectedClass].forEach(name => {
+    const option = document.createElement("option");
+    option.value = name;
+    option.text = name;
+    studentDropdown.appendChild(option);
+  });
+}
+
+function goToTest() {
+
+  const className = document.getElementById("class").value;
+  const studentName = document.getElementById("student").value;
+
+  if (!className || !studentName) {
+    alert("Please select your class and name.");
+    return;
+  }
+
+  window.location.href = `test.html?class=${className}&name=${studentName}`;
+}
+
+</script>
+
+</body>
+</html>

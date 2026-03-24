@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>PSTM Test</title>
+</head>
+
+<body style="font-family:Arial;text-align:center;margin-top:40px;">
+
+<h2>Listen and Repeat Task</h2>
+
+<p id="studentInfo"></p>
+
+<p id="instruction">
+You will first try an example.<br><br>
+Click <strong>START</strong>.<br>
+You will hear a sequence of words. Listen carefully.<strong>The audio will play once only</strong>.<br>
+After listening, repeat the words in the same order and record your voice.<br>
+Try your best — the words will get longer as you continue.
+</p>
+
+
+<h3 id="itemLabel">Example</h3>
+
+<button id="startBtn">START</button>
+<br><br>
+
+<audio id="audio"></audio>
+
+<button id="recordBtn" disabled>Record</button>
+<button id="stopBtn" disabled>Stop</button>
+<br><br>
+<button id="nextBtn" disabled>NEXT</button>
+
+<p id="status"></p>
+
+<script>
+
+// Get student info
+const params = new URLSearchParams(window.location.search);
+const className = params.get("class");
+const studentName = params.get("name");
+const fullName = className + "_" + studentName;
+
+document.getElementById("studentInfo").innerText =
+  `Class: ${className} | Name: ${studentName}`;
+
+// FILES
+const exampleFile = "example.wav";
+
+const audioFiles = [
+  "item01.wav","item02.wav","item03.wav","item04.wav",
+  "item05.wav","item06.wav","item07.wav","item08.wav",
+  "item09.wav","item10.wav","item11.wav","item12.wav"
+];
+
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw-6n6ptYAruX8CSk44r2pIf3NvSIMxVsn3WhxR7i7SLn6Cd4sAJVAXF0p3MuaGmGk/exec";
+
+// VARIABLES
+let current = 0;
+let recorder;
+let chunks = [];
+let isExample = true;
+
+const audio = document.getElementById("audio");
+const startBtn = document.getElementById("startBtn");
+const recordBtn = document.getElementById("recordBtn");
+const stopBtn = document.getElementById("stopBtn");
+const nextBtn = document.getElementById("nextBtn");
+const status = document.getElementById("status");
+const itemLabel = document.getElementById("itemLabel");
+const instruction = document.getElementById("instruction");
+
+audio.src = exampleFile;
+
+// START
+startBtn.onclick = async () => {
+  startBtn.disabled = true;
+  status.innerText = "Listening...";
+  await audio.play();
+};
+
+// AFTER AUDIO
+audio.onended = async () => {
+
+  recordBtn.disabled = false;
+
+  const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+  recorder = new MediaRecorder(stream);
+
+  recorder.ondataavailable = e => chunks.push(e.data);
+
+  recorder.onstop = () => {
+    if (isExample) {
+      status.innerText = "Example done. Click NEXT.";
+      nextBtn.disabled = false;
+    } else {
+      uploadRecording();
+    }
+  };
+};
+
+// RECORD
+recordBtn.onclick = () => {
+  chunks = [];
+  recorder.start();
+  recordBtn.disabled = true;
+  stopBtn.disabled = false;
+};
+
+// STOP
+stopBtn.onclick = () => {
+  recorder.stop();
+  stopBtn.disabled = true;
+};
+
+// NEXT
+nextBtn.onclick = () => {
+
+  if (isExample) {
+    isExample = false;
+    current = 0;
+    audio.src = audioFiles[current];
+    itemLabel.innerText = "Item 1 of 12";
+  } else {
+    current++;
+    if (current < audioFiles.length) {
+      audio.src = audioFiles[current];
+      itemLabel.innerText = `Item ${current + 1} of 12`;
+    } else {
+      itemLabel.innerText = "Completed";
+      status.innerText = "Thank you.";
+      return;
+    }
+  }
+
+  startBtn.disabled = false;
+  recordBtn.disabled = true;
+  nextBtn.disabled = true;
+};
+
+// UPLOAD
+function uploadRecording() {
+
+  const blob = new Blob(chunks, { type: "audio/webm" });
+
+  const reader = new FileReader();
+  reader.onloadend = () => {
+
+    const base64 = reader.result.split(",")[1];
+
+    fetch(SCRIPT_URL, {
+      method: "POST",
+      body: new URLSearchParams({
+        student: fullName,
+        item: current + 1,
+        audio: base64
+      })
+    })
+    .then(() => {
+      status.innerText = "Uploaded";
+      nextBtn.disabled = false;
+    });
+
+  };
+
+  reader.readAsDataURL(blob);
+}
+
+</script>
+
+</body>
+</html>
