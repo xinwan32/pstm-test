@@ -136,50 +136,44 @@ recordBtn.onclick = async () => {
 
   try {
 
-       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
- 
-   const mimeType = getSupportedMimeType();
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
 
- try {
-    recorder = mimeType
-      ? new MediaRecorder(stream, { mimeType })
-      : new MediaRecorder(stream);
-  } catch (e) {
-    alert("Recording not supported.");
-    return;
-  }
+    const mimeType = getSupportedMimeType();
 
-  chunks = [];
-     
-  recorder.ondataavailable = e => {
-  if (e.data && e.data.size > 0) {
-    chunks.push(e.data);
-  }
-};
-
-  recorder.onstop = () => {
-
-    if (isExample) {
-      status.innerText = "Example done. Click NEXT.";
-      nextBtn.disabled = false;
-    } else {
-      status.innerText = "Uploading...";
-      uploadRecording();
+    try {
+      recorder = mimeType
+        ? new MediaRecorder(stream, { mimeType })
+        : new MediaRecorder(stream);
+    } catch (e) {
+      alert("Recording not supported.");
+      return;
     }
 
-  };
+    chunks = [];
 
+    recorder.ondataavailable = e => {
+      if (e.data && e.data.size > 0) {
+        chunks.push(e.data);
+      }
+    };
 
-/* ============================
-   RECORD BUTTON
-============================ */
+    recorder.onstop = () => {
+      if (isExample) {
+        status.innerText = "Example done. Click NEXT.";
+        nextBtn.disabled = false;
+      } else {
+        status.innerText = "Uploading...";
+        uploadRecording();
+      }
+    };
 
-  recorder.start();
-  recordBtn.disabled = true;
-  stopBtn.disabled = false;
-  status.innerText = "Recording...";
-   
- } catch (err) {
+   recorder.start();
+
+    recordBtn.disabled = true;
+    stopBtn.disabled = false;
+    status.innerText = "Recording...";
+
+  } catch (err) {
 
     alert("Microphone permission denied.");
     status.innerText = "Microphone access required.";
