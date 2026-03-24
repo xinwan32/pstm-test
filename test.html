@@ -14,11 +14,10 @@
 <p id="instruction">
 You will first try an example.<br><br>
 Click <strong>START</strong>.<br>
-You will hear a sequence of words. Listen carefully.<strong>The audio will play once only</strong>.<br>
+You will hear a sequence of words. Listen carefully. <strong>The audio will play once only</strong>.<br>
 After listening, repeat the words in the same order and record your voice.<br>
 Try your best — the words will get longer as you continue.
 </p>
-
 
 <h3 id="itemLabel">Example</h3>
 
@@ -36,7 +35,10 @@ Try your best — the words will get longer as you continue.
 
 <script>
 
-// Get student info
+/* ============================
+   GET STUDENT INFO
+============================ */
+
 const params = new URLSearchParams(window.location.search);
 const className = params.get("class");
 const studentName = params.get("name");
@@ -45,7 +47,10 @@ const fullName = className + "_" + studentName;
 document.getElementById("studentInfo").innerText =
   `Class: ${className} | Name: ${studentName}`;
 
-// FILES
+/* ============================
+   FILE SETTINGS
+============================ */
+
 const exampleFile = "example.wav";
 
 const audioFiles = [
@@ -56,11 +61,19 @@ const audioFiles = [
 
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw-6n6ptYAruX8CSk44r2pIf3NvSIMxVsn3WhxR7i7SLn6Cd4sAJVAXF0p3MuaGmGk/exec";
 
-// VARIABLES
+/* ============================
+   VARIABLES
+============================ */
+
 let current = 0;
 let recorder;
 let chunks = [];
 let isExample = true;
+let stream;
+
+/* ============================
+   ELEMENTS
+============================ */
 
 const audio = document.getElementById("audio");
 const startBtn = document.getElementById("startBtn");
@@ -69,88 +82,135 @@ const stopBtn = document.getElementById("stopBtn");
 const nextBtn = document.getElementById("nextBtn");
 const status = document.getElementById("status");
 const itemLabel = document.getElementById("itemLabel");
-const instruction = document.getElementById("instruction");
 
+/* ============================
+   INITIAL SETUP
+============================ */
+
+audio.controls = false;
 audio.src = exampleFile;
 
-// START
+// Ask mic permission ONCE
+navigator.mediaDevices.getUserMedia({ audio: true })
+.then(s => {
+  stream = s;
+})
+.catch(() => {
+  alert("Microphone permission is required.");
+});
+
+/* ============================
+   START BUTTON
+============================ */
+
 startBtn.onclick = async () => {
   startBtn.disabled = true;
   status.innerText = "Listening...";
   await audio.play();
 };
 
-// AFTER AUDIO
-audio.onended = async () => {
+/* ============================
+   AFTER AUDIO ENDS
+============================ */
 
+audio.onended = () => {
+
+  status.innerText = "Now record your answer.";
   recordBtn.disabled = false;
 
-  const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
   recorder = new MediaRecorder(stream);
 
   recorder.ondataavailable = e => chunks.push(e.data);
 
   recorder.onstop = () => {
+
     if (isExample) {
       status.innerText = "Example done. Click NEXT.";
       nextBtn.disabled = false;
     } else {
+      status.innerText = "Uploading...";
       uploadRecording();
     }
+
   };
 };
 
-// RECORD
+/* ============================
+   RECORD BUTTON
+============================ */
+
 recordBtn.onclick = () => {
   chunks = [];
   recorder.start();
   recordBtn.disabled = true;
   stopBtn.disabled = false;
   status.innerText = "Recording...";
-
 };
 
-// STOP
+/* ============================
+   STOP BUTTON
+============================ */
+
 stopBtn.onclick = () => {
   recorder.stop();
   stopBtn.disabled = true;
 };
 
-// NEXT
+/* ============================
+   NEXT BUTTON
+============================ */
+
 nextBtn.onclick = () => {
 
   if (isExample) {
+
     isExample = false;
     current = 0;
+
     audio.src = audioFiles[current];
     itemLabel.innerText = "Item 1 of 12";
+
   } else {
+
     current++;
+
     if (current < audioFiles.length) {
+
       audio.src = audioFiles[current];
       itemLabel.innerText = `Item ${current + 1} of 12`;
+
     } else {
-      itemLabel.innerText = "Completed";
-      status.innerText = "Thank you.";
+
+      itemLabel.innerText = "Test completed";
+      status.innerText = "Thank you. You may close this page.";
+
+      startBtn.disabled = true;
+      recordBtn.disabled = true;
+      stopBtn.disabled = true;
+      nextBtn.disabled = true;
+
       return;
     }
   }
 
   startBtn.disabled = false;
   recordBtn.disabled = true;
+  stopBtn.disabled = true;
   nextBtn.disabled = true;
+  status.innerText = "";
+
 };
 
-// UPLOAD
-function uploadRecording() {
-  const className = document.getElementById("class").value;
-  const studentName = document.getElementById("student").value;
+/* ============================
+   UPLOAD FUNCTION
+============================ */
 
-  const fullName = className + "_" + studentName;
+function uploadRecording() {
 
   const blob = new Blob(chunks, { type: "audio/webm" });
 
   const reader = new FileReader();
+
   reader.onloadend = () => {
 
     const base64 = reader.result.split(",")[1];
@@ -164,9 +224,9 @@ function uploadRecording() {
       })
     })
     .then(() => {
-      status.innerText = "Uploaded";
+      status.innerText = "Uploaded successfully.";
       nextBtn.disabled = false;
-    });
+    })
     .catch(() => {
       status.innerText = "Upload failed.";
     });
