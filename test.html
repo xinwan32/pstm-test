@@ -247,6 +247,7 @@ function uploadRecording() {
         student: fullName,
         item: current + 1,
         audio: base64
+        mimeType: recorder.mimeType 
       })
     })
     .then(() => {
