@@ -36,7 +36,7 @@ Try your best — the words will get longer as you continue.
 <script>
 
 /* ============================
-   GET STUDENT INFO
+   STUDENT INFO
 ============================ */
 
 const params = new URLSearchParams(window.location.search);
@@ -48,7 +48,7 @@ document.getElementById("studentInfo").innerText =
   `Class: ${className} | Name: ${studentName}`;
 
 /* ============================
-   FILE SETTINGS
+   FILES
 ============================ */
 
 const exampleFile = "example.wav";
@@ -59,7 +59,7 @@ const audioFiles = [
   "item09.wav","item10.wav","item11.wav","item12.wav"
 ];
 
-const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxlVv7UYHwWLnTzsyt7MN2jDAQGUfKNY639EzXzvIf0obOJ9Og9RNS9awDn9Am8fVE/exec";
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw-6n6ptYAruX8CSk44r2pIf3NvSIMxVsn3WhxR7i7SLn6Cd4sAJVAXF0p3MuaGmGk/exec";
 
 /* ============================
    VARIABLES
@@ -70,6 +70,7 @@ let recorder;
 let chunks = [];
 let isExample = true;
 let stream;
+let isUploading = false;
 
 /* ============================
    ELEMENTS
@@ -90,17 +91,13 @@ const itemLabel = document.getElementById("itemLabel");
 audio.controls = false;
 audio.src = exampleFile;
 
-// Ask mic permission ONCE
+// Get mic ONCE
 navigator.mediaDevices.getUserMedia({ audio: true })
-.then(s => {
-  stream = s;
-})
-.catch(() => {
-  alert("Microphone permission is required.");
-});
+.then(s => stream = s)
+.catch(() => alert("Microphone permission required"));
 
 /* ============================
-   START BUTTON
+   START
 ============================ */
 
 startBtn.onclick = async () => {
@@ -110,7 +107,7 @@ startBtn.onclick = async () => {
 };
 
 /* ============================
-   AFTER AUDIO ENDS
+   AFTER AUDIO
 ============================ */
 
 audio.onended = () => {
@@ -128,7 +125,7 @@ audio.onended = () => {
       status.innerText = "Example done. Click NEXT.";
       nextBtn.disabled = false;
     } else {
-      status.innerText = "Uploading...";
+      status.innerText = "Uploading... please wait (do NOT click NEXT)";
       uploadRecording();
     }
 
@@ -136,7 +133,7 @@ audio.onended = () => {
 };
 
 /* ============================
-   RECORD BUTTON
+   RECORD
 ============================ */
 
 recordBtn.onclick = () => {
@@ -148,7 +145,7 @@ recordBtn.onclick = () => {
 };
 
 /* ============================
-   STOP BUTTON
+   STOP
 ============================ */
 
 stopBtn.onclick = () => {
@@ -157,10 +154,15 @@ stopBtn.onclick = () => {
 };
 
 /* ============================
-   NEXT BUTTON
+   NEXT
 ============================ */
 
 nextBtn.onclick = () => {
+
+  if (isUploading) {
+    alert("Please wait until upload is complete.");
+    return;
+  }
 
   if (isExample) {
 
@@ -202,12 +204,14 @@ nextBtn.onclick = () => {
 };
 
 /* ============================
-   UPLOAD FUNCTION
+   UPLOAD
 ============================ */
 
 function uploadRecording() {
 
-  const blob = new Blob(chunks, { type: "audio/webm" });
+  isUploading = true;
+
+  const blob = new Blob(chunks, { type: "audio/ogg" }); // changed to ogg
 
   const reader = new FileReader();
 
@@ -226,9 +230,11 @@ function uploadRecording() {
     .then(() => {
       status.innerText = "Uploaded successfully.";
       nextBtn.disabled = false;
+      isUploading = false;
     })
     .catch(() => {
-      status.innerText = "Upload failed.";
+      status.innerText = "Upload failed. Please try again.";
+      isUploading = false;
     });
 
   };
