@@ -100,6 +100,27 @@ navigator.mediaDevices.getUserMedia({ audio: true })
 });
 
 /* ============================
+   FORMAT DETECTION
+============================ */
+
+function getSupportedMimeType() {
+
+  if (MediaRecorder.isTypeSupported("audio/mp4")) {
+    return "audio/mp4"; // Safari / iPad
+  }
+
+  if (MediaRecorder.isTypeSupported("audio/webm;codecs=opus")) {
+    return "audio/webm;codecs=opus"; // Chrome
+  }
+
+  if (MediaRecorder.isTypeSupported("audio/ogg;codecs=opus")) {
+    return "audio/ogg;codecs=opus"; // Firefox
+  }
+
+  return ""; // fallback
+}
+
+/* ============================
    START BUTTON
 ============================ */
 
@@ -118,7 +139,11 @@ audio.onended = () => {
   status.innerText = "Now record your answer.";
   recordBtn.disabled = false;
 
-  recorder = new MediaRecorder(stream);
+  const mimeType = getSupportedMimeType();
+
+  recorder = mimeType
+    ? new MediaRecorder(stream, { mimeType })
+    : new MediaRecorder(stream);
 
   recorder.ondataavailable = e => chunks.push(e.data);
 
@@ -207,7 +232,8 @@ nextBtn.onclick = () => {
 
 function uploadRecording() {
 
-  const blob = new Blob(chunks, { type: "audio/webm" });
+  const mimeType = recorder.mimeType || "audio/webm";
+  const blob = new Blob(chunks, { type: mimeType });
 
   const reader = new FileReader();
 
