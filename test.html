@@ -90,15 +90,6 @@ const itemLabel = document.getElementById("itemLabel");
 audio.controls = false;
 audio.src = exampleFile;
 
-// Ask mic permission ONCE
-navigator.mediaDevices.getUserMedia({ audio: true })
-.then(s => {
-  stream = s;
-})
-.catch(() => {
-  alert("Microphone permission is required.");
-});
-
 /* ============================
    FORMAT DETECTION
 ============================ */
@@ -139,7 +130,16 @@ audio.onended = () => {
   status.innerText = "Now record your answer.";
   recordBtn.disabled = false;
 
-  const mimeType = getSupportedMimeType();
+recordBtn.onclick = async () => {
+
+  status.innerText = "Preparing microphone...";
+
+  try {
+
+    // 🔥 Request mic ONLY when user clicks
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+ 
+   const mimeType = getSupportedMimeType();
 
  try {
     recorder = mimeType
@@ -150,6 +150,8 @@ audio.onended = () => {
     return;
   }
 
+  chunks = [];
+     
   recorder.ondataavailable = e => {
   if (e.data && e.data.size > 0) {
     chunks.push(e.data);
@@ -173,12 +175,17 @@ audio.onended = () => {
    RECORD BUTTON
 ============================ */
 
-recordBtn.onclick = () => {
-  chunks = [];
   recorder.start();
   recordBtn.disabled = true;
   stopBtn.disabled = false;
   status.innerText = "Recording...";
+   
+ } catch (err) {
+
+    alert("Microphone permission denied.");
+    status.innerText = "Microphone access required.";
+
+  }
 };
 
 /* ============================
