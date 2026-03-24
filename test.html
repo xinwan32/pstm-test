@@ -106,6 +106,8 @@ recordBtn.onclick = () => {
   recorder.start();
   recordBtn.disabled = true;
   stopBtn.disabled = false;
+  status.innerText = "Recording...";
+
 };
 
 // STOP
@@ -141,6 +143,10 @@ nextBtn.onclick = () => {
 
 // UPLOAD
 function uploadRecording() {
+  const className = document.getElementById("class").value;
+  const studentName = document.getElementById("student").value;
+
+  const fullName = className + "_" + studentName;
 
   const blob = new Blob(chunks, { type: "audio/webm" });
 
@@ -160,6 +166,9 @@ function uploadRecording() {
     .then(() => {
       status.innerText = "Uploaded";
       nextBtn.disabled = false;
+    });
+    .catch(() => {
+      status.innerText = "Upload failed.";
     });
 
   };
