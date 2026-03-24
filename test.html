@@ -126,9 +126,9 @@ startBtn.onclick = async () => {
 ============================ */
 
 audio.onended = () => {
-
   status.innerText = "Now record your answer.";
   recordBtn.disabled = false;
+};
 
 recordBtn.onclick = async () => {
 
@@ -136,8 +136,7 @@ recordBtn.onclick = async () => {
 
   try {
 
-    // 🔥 Request mic ONLY when user clicks
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
  
    const mimeType = getSupportedMimeType();
 
