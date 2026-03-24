@@ -141,11 +141,20 @@ audio.onended = () => {
 
   const mimeType = getSupportedMimeType();
 
-  recorder = mimeType
-    ? new MediaRecorder(stream, { mimeType })
-    : new MediaRecorder(stream);
+ try {
+    recorder = mimeType
+      ? new MediaRecorder(stream, { mimeType })
+      : new MediaRecorder(stream);
+  } catch (e) {
+    alert("Recording not supported.");
+    return;
+  }
 
-  recorder.ondataavailable = e => chunks.push(e.data);
+  recorder.ondataavailable = e => {
+  if (e.data && e.data.size > 0) {
+    chunks.push(e.data);
+  }
+};
 
   recorder.onstop = () => {
 
@@ -232,6 +241,10 @@ nextBtn.onclick = () => {
 
 function uploadRecording() {
 
+   if (chunks.length === 0) {
+    status.innerText = "Recording failed. Please try again.";
+    return;
+  }
   const mimeType = recorder.mimeType || "audio/webm";
   const blob = new Blob(chunks, { type: mimeType });
 
@@ -246,8 +259,8 @@ function uploadRecording() {
       body: new URLSearchParams({
         student: fullName,
         item: current + 1,
-        audio: base64
-        mimeType: recorder.mimeType 
+        audio: base64,
+        mimeType: mimeType 
       })
     })
     .then(() => {
