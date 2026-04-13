@@ -54,9 +54,9 @@ document.getElementById("studentInfo").innerText =
 const exampleFile = "example.wav";
 
 const audioFiles = [
-  "item01.wav","item02.wav","item03.wav","item04.wav",
-  "item05.wav","item06.wav","item07.wav","item08.wav",
-  "item09.wav","item10.wav","item11.wav","item12.wav"
+  "item01.wav","item03.wav","item04.wav",
+  "item05.wav","item07.wav","item08.wav",
+  "item09.wav","item11.wav","item12.wav"
 ];
 
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbySNjOH9ji-qv6TLj8sxM525ti_Mqz-p86IvrL4RzBWv22blF4r7XQfxByNkronsY8/exec";
@@ -202,7 +202,7 @@ nextBtn.onclick = () => {
     current = 0;
 
     audio.src = audioFiles[current];
-    itemLabel.innerText = "Item 1 of 12";
+    itemLabel.innerText = "Item 1 of 9";
 
   } else {
 
@@ -211,7 +211,7 @@ nextBtn.onclick = () => {
     if (current < audioFiles.length) {
 
       audio.src = audioFiles[current];
-      itemLabel.innerText = `Item ${current + 1} of 12`;
+      itemLabel.innerText = `Item ${current + 1} of 9`;
 
     } else {
 
