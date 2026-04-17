@@ -54,9 +54,9 @@ document.getElementById("studentInfo").innerText =
 const exampleFile = "example.wav";
 
 const audioFiles = [
-  "item01.wav","item02.wav","item03.wav","item04.wav",
-  "item05.wav","item06.wav","item07.wav","item08.wav",
-  "item09.wav","item10.wav","item11.wav","item12.wav"
+  "item01.wav","item03.wav","item04.wav",
+  "item05.wav","item07.wav","item08.wav",
+  "item09.wav","item11.wav","item12.wav"
 ];
 
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbySNjOH9ji-qv6TLj8sxM525ti_Mqz-p86IvrL4RzBWv22blF4r7XQfxByNkronsY8/exec";
@@ -89,15 +89,6 @@ const itemLabel = document.getElementById("itemLabel");
 
 audio.controls = false;
 audio.src = exampleFile;
-
-// Ask mic permission ONCE
-navigator.mediaDevices.getUserMedia({ audio: true })
-.then(s => {
-  stream = s;
-})
-.catch(() => {
-  alert("Microphone permission is required.");
-});
 
 /* ============================
    FORMAT DETECTION
@@ -135,41 +126,59 @@ startBtn.onclick = async () => {
 ============================ */
 
 audio.onended = () => {
-
   status.innerText = "Now record your answer.";
   recordBtn.disabled = false;
-
-  const mimeType = getSupportedMimeType();
-
-  recorder = mimeType
-    ? new MediaRecorder(stream, { mimeType })
-    : new MediaRecorder(stream);
-
-  recorder.ondataavailable = e => chunks.push(e.data);
-
-  recorder.onstop = () => {
-
-    if (isExample) {
-      status.innerText = "Example done. Click NEXT.";
-      nextBtn.disabled = false;
-    } else {
-      status.innerText = "Uploading...";
-      uploadRecording();
-    }
-
-  };
 };
 
-/* ============================
-   RECORD BUTTON
-============================ */
+recordBtn.onclick = async () => {
 
-recordBtn.onclick = () => {
-  chunks = [];
-  recorder.start();
-  recordBtn.disabled = true;
-  stopBtn.disabled = false;
-  status.innerText = "Recording...";
+  status.innerText = "Preparing microphone...";
+
+  try {
+
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+
+    const mimeType = getSupportedMimeType();
+
+    try {
+      recorder = mimeType
+        ? new MediaRecorder(stream, { mimeType })
+        : new MediaRecorder(stream);
+    } catch (e) {
+      alert("Recording not supported.");
+      return;
+    }
+
+    chunks = [];
+
+    recorder.ondataavailable = e => {
+      if (e.data && e.data.size > 0) {
+        chunks.push(e.data);
+      }
+    };
+
+    recorder.onstop = () => {
+      if (isExample) {
+        status.innerText = "Example done. Click NEXT.";
+        nextBtn.disabled = false;
+      } else {
+        status.innerText = "Uploading...";
+        uploadRecording();
+      }
+    };
+
+   recorder.start();
+
+    recordBtn.disabled = true;
+    stopBtn.disabled = false;
+    status.innerText = "Recording...";
+
+  } catch (err) {
+
+    alert("Microphone permission denied.");
+    status.innerText = "Microphone access required.";
+
+  }
 };
 
 /* ============================
@@ -193,7 +202,7 @@ nextBtn.onclick = () => {
     current = 0;
 
     audio.src = audioFiles[current];
-    itemLabel.innerText = "Item 1 of 12";
+    itemLabel.innerText = "Item 1 of 9";
 
   } else {
 
@@ -202,7 +211,7 @@ nextBtn.onclick = () => {
     if (current < audioFiles.length) {
 
       audio.src = audioFiles[current];
-      itemLabel.innerText = `Item ${current + 1} of 12`;
+      itemLabel.innerText = `Item ${current + 1} of 9`;
 
     } else {
 
@@ -232,6 +241,10 @@ nextBtn.onclick = () => {
 
 function uploadRecording() {
 
+   if (chunks.length === 0) {
+    status.innerText = "Recording failed. Please try again.";
+    return;
+  }
   const mimeType = recorder.mimeType || "audio/webm";
   const blob = new Blob(chunks, { type: mimeType });
 
@@ -246,7 +259,8 @@ function uploadRecording() {
       body: new URLSearchParams({
         student: fullName,
         item: current + 1,
-        audio: base64
+        audio: base64,
+        mimeType: mimeType 
       })
     })
     .then(() => {
